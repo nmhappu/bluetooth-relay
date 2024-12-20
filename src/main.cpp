@@ -15,10 +15,12 @@ BluetoothSerial SerialBT;
 // GPIO States
 String output26State = "off";
 String output27State = "off";
+String output2State = "off";
 
 // GPIO Pins
 const int output26 = 26;
 const int output27 = 27;
+const int output2 = 2;
 
 // Timeout Variables
 unsigned long currentTime = millis();
@@ -34,8 +36,11 @@ void setup() {
   Serial.println("Bluetooth started. Awaiting connection...");
 
   // Initialize GPIO Pins
+  pinMode(output2, OUTPUT);
   pinMode(output26, OUTPUT);
   pinMode(output27, OUTPUT);
+
+  digitalWrite(output2, LOW);
   digitalWrite(output26, LOW);
   digitalWrite(output27, LOW);
 
@@ -119,28 +124,48 @@ void loop(){
   }
 
   // Handle Bluetooth Commands
-  if (SerialBT.available()) {
+  if (SerialBT.available())
+  {
     String btCommand = SerialBT.readStringUntil('\n');
     btCommand.trim(); // Remove trailing newline or spaces
     Serial.println("Bluetooth Command: " + btCommand);
 
-    if (btCommand == "26_ON") {
+    if (btCommand == "26_ON")
+    {
       output26State = "on";
       digitalWrite(output26, HIGH);
       SerialBT.println("GPIO 26 turned ON");
-    } else if (btCommand == "26_OFF") {
+    }
+    else if (btCommand == "26_OFF")
+    {
       output26State = "off";
       digitalWrite(output26, LOW);
       SerialBT.println("GPIO 26 turned OFF");
-    } else if (btCommand == "27_ON") {
+    }
+    else if (btCommand == "27_ON")
+    {
       output27State = "on";
       digitalWrite(output27, HIGH);
       SerialBT.println("GPIO 27 turned ON");
-    } else if (btCommand == "27_OFF") {
+    }
+    else if (btCommand == "27_OFF")
+    {
       output27State = "off";
       digitalWrite(output27, LOW);
       SerialBT.println("GPIO 27 turned OFF");
-    } else {
+    }
+    else if (btCommand == "2_ON")
+    { // Control for GPIO2
+      digitalWrite(output2, HIGH);
+      SerialBT.println("GPIO 2 turned ON");
+    }
+    else if (btCommand == "2_OFF")
+    { // Control for GPIO2
+      digitalWrite(output2, LOW);
+      SerialBT.println("GPIO 2 turned OFF");
+    }
+    else
+    {
       SerialBT.println("Unknown Command");
     }
   }
