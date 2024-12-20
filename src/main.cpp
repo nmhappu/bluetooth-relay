@@ -1,31 +1,56 @@
 #include <WiFi.h>
+#include <BluetoothSerial.h>
 
+// Wi-Fi Credentials
 const char* ssid = "ESP32-AP";
 const char* password = "12345678";
+
+// Wi-Fi Server
 WiFiServer server(80);
 String header;
+
+// Bluetooth Serial
+BluetoothSerial SerialBT;
+
+// GPIO States
 String output26State = "off";
 String output27State = "off";
+
+// GPIO Pins
 const int output26 = 26;
 const int output27 = 27;
+
+// Timeout Variables
 unsigned long currentTime = millis();
 unsigned long previousTime = 0; 
 const long timeoutTime = 2000;
 
 void setup() {
+  // Initialize Serial Monitor
   Serial.begin(115200);
+
+  // Initialize Bluetooth
+  SerialBT.begin("ESP32_BT_Server"); // Set Bluetooth device name
+  Serial.println("Bluetooth started. Awaiting connection...");
+
+  // Initialize GPIO Pins
   pinMode(output26, OUTPUT);
   pinMode(output27, OUTPUT);
   digitalWrite(output26, LOW);
   digitalWrite(output27, LOW);
+
+  // Start Wi-Fi Access Point
   WiFi.softAP(ssid, password);
   Serial.println("Access Point Started");
   Serial.print("IP Address: ");
   Serial.println(WiFi.softAPIP());
+
+  // Start Server
   server.begin();
 }
 
 void loop(){
+  // Handle Wi-Fi Client
   WiFiClient client = server.available();
   if (client) {
     currentTime = millis();
@@ -44,6 +69,7 @@ void loop(){
             client.println("Content-type:text/html");
             client.println("Connection: close");
             client.println();
+            // Handle Web Requests
             if (header.indexOf("GET /26/on") >= 0) {
               output26State = "on";
               digitalWrite(output26, HIGH);
@@ -57,6 +83,7 @@ void loop(){
               output27State = "off";
               digitalWrite(output27, LOW);
             }
+            // Send HTML Response
             client.println("<!DOCTYPE html><html>");
             client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
             client.println("<style>html { font-family: Helvetica; text-align: center;}");
@@ -89,5 +116,32 @@ void loop(){
     header = "";
     client.stop();
     Serial.println("Client disconnected.");
+  }
+
+  // Handle Bluetooth Commands
+  if (SerialBT.available()) {
+    String btCommand = SerialBT.readStringUntil('\n');
+    btCommand.trim(); // Remove trailing newline or spaces
+    Serial.println("Bluetooth Command: " + btCommand);
+
+    if (btCommand == "26_ON") {
+      output26State = "on";
+      digitalWrite(output26, HIGH);
+      SerialBT.println("GPIO 26 turned ON");
+    } else if (btCommand == "26_OFF") {
+      output26State = "off";
+      digitalWrite(output26, LOW);
+      SerialBT.println("GPIO 26 turned OFF");
+    } else if (btCommand == "27_ON") {
+      output27State = "on";
+      digitalWrite(output27, HIGH);
+      SerialBT.println("GPIO 27 turned ON");
+    } else if (btCommand == "27_OFF") {
+      output27State = "off";
+      digitalWrite(output27, LOW);
+      SerialBT.println("GPIO 27 turned OFF");
+    } else {
+      SerialBT.println("Unknown Command");
+    }
   }
 }
